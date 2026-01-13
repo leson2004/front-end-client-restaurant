@@ -1,0 +1,32 @@
+/* Ghi đè các style mặc định */
+.fileContainer {
+    border: 2px dashed #007bff;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+}
+
+.fileContainer div {
+    margin: 0 auto;
+}
+
+.chooseFileButton {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.filePreview {
+    margin-top: 20px;
+}
+
+.filePreview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    border: 2px solid #007bff;
+}

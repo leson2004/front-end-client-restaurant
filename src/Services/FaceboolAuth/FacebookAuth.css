@@ -1,0 +1,11 @@
+.facebook-btn {
+    background-color: #77abff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    cursor: pointer !important;
+}
