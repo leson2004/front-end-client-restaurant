@@ -199,7 +199,7 @@ function ChatPopup() {
           setBotTyping(true);
           // Gọi API chatbot
           const response = await axios.post(
-            "http://localhost:6969/api/chatbot",
+            "http://localhost:8080/api/chatbot",
             { message: newMessageData.text }
           );
 

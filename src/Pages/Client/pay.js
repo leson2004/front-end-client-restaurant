@@ -36,7 +36,7 @@ export default function Pay() {
   const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
   const [openDangerAlert, setOpenDangerAlert] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [errMasege, setErrMasege] = useState('');
+  const [errMasege, setErrMasege] = useState("");
 
   useEffect(() => {
     const savedCustomerInfo = localStorage.getItem("customerInfo");
@@ -127,13 +127,13 @@ export default function Pay() {
         setVoucherCode("");
         setOpenSuccessAlert(true);
       } else {
-        setErrMasege('Mã giảm giá không hợp lệ hoặt đã hết hạn');
+        setErrMasege("Mã giảm giá không hợp lệ hoặt đã hết hạn");
         setOpenDangerAlert(true);
       }
     } else {
       setDiscount(0);
       setSelectedPromotion("");
-      setErrMasege('Mã giảm giá không hợp lệ hoặt đã hết hạn');
+      setErrMasege("Mã giảm giá không hợp lệ hoặt đã hết hạn");
       setOpenDangerAlert(true);
     }
   };
@@ -174,7 +174,7 @@ export default function Pay() {
     if (paymentMethod === "MOMO") {
       try {
         const depositAmount = finalTotal * 0.3;
-  
+
         const orderData = {
           ...customerInfo,
           reservation_code,
@@ -184,17 +184,17 @@ export default function Pay() {
           promotion_id: selectedPromotion || null,
           user_id: userId,
         };
-  
+
         // Dispatch reservation action
         const reservation = await dispatch(addNewReservation(orderData));
-  
+
         localStorage.removeItem("customerInfo");
         localStorage.removeItem("selectedProducts");
-  
+
         await Promise.all(
           Object.values(selectedProducts).map((product) => {
             const reservationDetail = {
-              reservation_id: reservation.id,
+              reservation_id: reservation.reservation_id,
               product_id: product.id,
               quantity: product.quantity,
               price: product.price,
@@ -202,24 +202,28 @@ export default function Pay() {
             return dispatch(addNewReservationDetail(reservationDetail));
           })
         );
-  
+
         if (paymentMethod === "MOMO") {
           const momoResponse = await dispatch(
-            requestMomoPayment(reservation.id, depositAmount, reservation_code)
+            requestMomoPayment(
+              reservation.reservation_id,
+              depositAmount,
+              reservation_code
+            )
           );
           if (momoResponse && momoResponse.payUrl) {
             window.location.href = momoResponse.payUrl;
           }
         }
       } catch (error) {
-        setErrMasege('Hiện không có bàn trống vui lòng thử lại');
-        setOpenDangerAlert(true)
+        setErrMasege("Hiện không có bàn trống vui lòng thử lại");
+        setOpenDangerAlert(true);
       } finally {
         setShowConfirmDialog(false); // Đóng modal sau khi đặt bàn xong
       }
     } else if (paymentMethod === "VNPay") {
-      setErrMasege('Tính năng thanh toán VNPAY chưa hỗ trợ');
-      setOpenDangerAlert(true)
+      setErrMasege("Tính năng thanh toán VNPAY chưa hỗ trợ");
+      setOpenDangerAlert(true);
     }
   };
 
