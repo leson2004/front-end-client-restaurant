@@ -16,38 +16,40 @@ import team1 from "../../Assets/Client/Images/team-1.jpg";
 import team2 from "../../Assets/Client/Images/team-2.jpg";
 import team3 from "../../Assets/Client/Images/team-3.jpg";
 import team4 from "../../Assets/Client/Images/team-4.jpg";
+import foodImg from "../../Assets/Client/Images/dish-2.png";
+import mainImg from "../../Assets/Client/Images/hero-img-1.jpg";
 import testimonial1 from "../../Assets/Client/Images/testimonial-1.jpg";
 import testimonial2 from "../../Assets/Client/Images/testimonial-2.jpg";
 import testimonial3 from "../../Assets/Client/Images/testimonial-3.jpg";
 import testimonial4 from "../../Assets/Client/Images/testimonial-4.jpg";
-import video from "../../Assets/Client/Images/video.jpg";
-
-
+import video from "../../Assets/Client/Images/image.png";
 
 const ImageGallery = {
-    about1,
-    about2,
-    about3,
-    about4,
-    bgHero,
-    hero,
-    menu1,
-    menu2,
-    menu3,
-    menu4,
-    menu5,
-    menu6,
-    menu7,
-    menu8,
-    team1,
-    team2,
-    team3,
-    team4,
-    testimonial1,
-    testimonial2,
-    testimonial3,
-    testimonial4,
-    video
+  about1,
+  about2,
+  about3,
+  about4,
+  bgHero,
+  hero,
+  menu1,
+  menu2,
+  menu3,
+  menu4,
+  menu5,
+  menu6,
+  menu7,
+  menu8,
+  team1,
+  team2,
+  team3,
+  team4,
+  testimonial1,
+  testimonial2,
+  testimonial3,
+  testimonial4,
+  video,
+  foodImg,
+  mainImg,
 };
 
 export default ImageGallery;

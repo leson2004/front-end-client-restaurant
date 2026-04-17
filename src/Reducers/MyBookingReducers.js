@@ -31,7 +31,7 @@ const MyBookingReducer = (state = initialState, action) => {
                 totalCount: action.payload.totalCount,
                 totalPages: action.payload.totalPages,
                 currentPage: action.payload.currentPage,
-                reservation: action.payload.results.slice(0, state.pageSize),
+                reservation: action.payload.results || [],
             };
         case FETCH_RESERVATIONS_FAILURE:
             return {
@@ -40,12 +40,9 @@ const MyBookingReducer = (state = initialState, action) => {
                 error: action.payload
             };
         case SET_CURRENT_PAGE:
-            const start = (action.payload - 1) * state.pageSize;
-            const end = start + state.pageSize;
             return {
                 ...state,
                 currentPage: action.payload,
-                reservation: state.allReservation.slice(start, end)
             };
         default:
             return state;

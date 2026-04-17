@@ -6,12 +6,7 @@ import { fetchBlog, fetchBlogWithoutPagi } from "../../Actions/BlogActions";
 import unidecode from "unidecode";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../../Components/Client/Spinner";
-import {
-  addCommentBlog,
-  fetchCommentBlog,
-  deleteCommentBlog,
-  updateCommentBlog,
-} from "../../Actions/CommentBlogActions";
+import { createComment, fetchCommentsByBlogId, deleteComment, updateComment, clearModerationMessage } from "../../Reducers/commentSlice";
 import DialogConfirm from "../../Components/Dialog/Dialog";
 import { jwtDecode as jwt_decode } from "jwt-decode";
 import { SuccessAlert } from "../../Components/Alert/Alert"; // Import SuccessAlert
@@ -25,8 +20,6 @@ const DetailBlog = () => {
   const blogDetailState = useSelector((state) => state.blog_detail);
   const blogState = useSelector((state) => state.blog);
 
-  const [open, setOpen] = useState(false);
-  const [openSuccess, setOpenSuccess] = useState(false);
   const [selectedID, setSelectedID] = useState(null);
 
   const [editingContent, setEditingContent] = useState(""); // Define setEditingContent
@@ -90,7 +83,6 @@ const DetailBlog = () => {
 
   useEffect(() => {
     dispatch(fetchBlogDetailBySlug(slug));
-    dispatch(fetchCommentBlog());
   }, [dispatch, slug]);
 
   useEffect(() => {
@@ -113,14 +105,18 @@ const DetailBlog = () => {
         blog_id: blogDetailState.blogDetail.id,
       }));
     }
+    // fetch comments for this blog when blog detail is available
+    if (blogDetailState.blogDetail?.id) {
+      dispatch(fetchCommentsByBlogId(blogDetailState.blogDetail.id));
+    }
   }, [blogDetailState.blogDetail]);
 
   useEffect(() => {
-    const comments = commentState.commentBlog.filter(
+    const comments = (commentState.comments || []).filter(
       (comment) => comment.blog_id === blogDetailState.blogDetail?.id
     );
     setFilteredComments(comments);
-  }, [commentState.commentBlog, blogDetailState.blogDetail]);
+  }, [commentState.comments, blogDetailState.blogDetail]);
 
   const handleBlogClick = (slug) => {
     navigate(`/blog-detail/${slug}.html`);
@@ -178,60 +174,53 @@ const DetailBlog = () => {
 
   const handleCommentSubmit = (e) => {
     e.preventDefault();
-    setErrors({}); // Reset errors
-
+    setErrors({});
     if (!newComment.content.trim()) {
       setErrors({ content: "Nội dung bình luận không được để trống!" });
       return;
     }
-
     const commentData = {
       blog_id: newComment.blog_id,
       user_id: newComment.user_id,
       content: newComment.content,
     };
-
-    dispatch(addCommentBlog(commentData))
+    dispatch(createComment(commentData))
       .then(() => {
-        // After successfully adding a comment, fetch the latest comments
-        dispatch(fetchCommentBlog("", 1, 10)); // Adjust parameters as needed
-        setNewComment((prevComment) => ({ ...prevComment, content: "" }));
-        setShowSuccessAlert(true);
+        setNewComment((prev) => ({ ...prev, content: "" }));
+        setTimeout(() => dispatch(clearModerationMessage()), 5000);
       })
-      .catch((error) => {
-        console.error("Lỗi khi thêm bình luận:", error);
+      .catch(() => {
+        setTimeout(() => dispatch(clearModerationMessage()), 8000);
       });
   };
 
   const handleDeleteComment = async () => {
-    const accessToken = localStorage.getItem("accessToken");
-
-    if (!accessToken) {
+    if (!localStorage.getItem("accessToken")) {
       alert("Bạn cần đăng nhập để thực hiện hành động này!");
       return;
     }
-
-    if (selectedID) {
-      try {
-        await dispatch(deleteCommentBlog(selectedID));
-        handleClose();
-        setShowSuccessAlert(true);
-        setOpenSuccess(true); // Hiển thị thông báo thành công
-      } catch (error) {
-        console.error("Error delete:", error);
-      }
+    if (!selectedID) return;
+    try {
+      await dispatch(deleteComment(selectedID));
+      handleClose();
+      setShowSuccessAlert(true);
+    } catch {
+      setShowSuccessAlert(false);
     }
   };
 
   const handleEditComment = async () => {
-    if (selectedID && editingContent) {
-      await dispatch(
-        updateCommentBlog(selectedID, { content: editingContent })
-      );
+    if (!selectedID || !editingContent.trim()) return;
+    try {
+      await dispatch(updateComment(selectedID, { content: editingContent.trim() }));
+      handleClose();
+      setEditingContent("");
+      setSelectedID(null);
       setShowSuccessAlert(true);
-      setIsEditDialogOpen(false);
-      setEditingContent(""); // Clear content after successful edit
-      setSelectedID(null); // Reset selectedID
+      setTimeout(() => dispatch(clearModerationMessage()), 5000);
+    } catch {
+      // moderationMessage set by reducer (rejected / 429 / 500)
+      setTimeout(() => dispatch(clearModerationMessage()), 8000);
     }
   };
 
@@ -321,123 +310,136 @@ const DetailBlog = () => {
           />
 
           {/* Phần bình luận */}
-          <div className="container mt-5">
-            <h3 className="text-center mb-4">Bình Luận</h3>
-            <div className="comment-card card bg-light border-0 shadow-sm p-3 mb-5 rounded">
-              <div className="card-body">
-                <div className="mb-4">
-                  {commentState.loading ? (
-                    <Spinner /> // Hiển thị spinner trong khi đang tải bình luận
-                  ) : filteredComments.length > 0 ? (
-                    filteredComments.map((comment, index) => (
+          <div className="container mt-5 mb-5">
+            <div className="row justify-content-center">
+              <div className="col-12 col-lg-9">
+                <h3 className="text-center mb-4 fw-bold">Bình luận</h3>
+                <div className="card border-0 shadow-sm rounded-3 overflow-hidden">
+                  <div className="card-body p-4">
+                    {/* Moderation / error message (create or edit) */}
+                    {commentState.moderationMessage && (
                       <div
-                        className="media mb-4 p-3 bg-white rounded border"
-                        key={index}
+                        className={`alert alert-${commentState.moderationMessage.type} alert-dismissible fade show d-flex align-items-start`}
+                        role="alert"
                       >
-                        <div className="media-body">
-                          <h6 className="mt-0 d-flex align-items-center">
-                            <img
-                              src={
-                                comment.avatar &&
-                                comment.avatar.startsWith("http")
-                                  ? comment.avatar
-                                  : normalAvatar
-                              }
-                              alt={comment.fullname || "Default Avatar"}
-                              className="comment-avatar"
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "50%",
-                                marginRight: "10px",
-                              }}
-                            />
-                            <span className="text-primary font-weight-bold">
-                              {comment.fullname}
+                        <span className="flex-grow-1">
+                          {commentState.moderationMessage.text}
+                          {commentState.moderationMessage.retryAfter != null && (
+                            <span className="d-block mt-1 small opacity-90">
+                              Thử lại sau {commentState.moderationMessage.retryAfter} giây.
                             </span>
-                          </h6>
-                          <p className="mb-1">{comment.content}</p>
-                          <div className="d-flex justify-content-between align-items-center">
-                            <small className="text-muted">
-                              {formatMessageTimestamp(comment.created_at)}
-                            </small>
-
-                            {/* Hiển thị nút "Sửa" và "Xóa" nếu người dùng là chủ sở hữu bình luận */}
-                            {userId === comment.user_id && (
-                              <div className="comment-actions">
-                                {/* Nút "Sửa" */}
-                                <button
-                                  className="btn text-muted btn-link btn-sm p-0"
-                                  style={{
-                                    fontSize: "12px",
-                                    marginRight: "10px",
-                                  }} // Thêm khoảng cách bên phải
-                                  onClick={() =>
-                                    handleClickOpen(
-                                      "edit",
-                                      comment.id,
-                                      comment.content
-                                    )
-                                  }
-                                >
-                                  Sửa
-                                </button>
-
-                                {/* Nút "Xóa" */}
-                                <button
-                                  className="btn text-muted btn-link btn-sm p-0"
-                                  style={{ fontSize: "12px" }}
-                                  onClick={() =>
-                                    handleClickOpen("delete", comment.id)
-                                  } // Mở modal xóa
-                                >
-                                  Xóa
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={() => dispatch(clearModerationMessage())}
+                          aria-label="Đóng"
+                        />
                       </div>
-                    ))
-                  ) : (
-                    <div className="alert alert-info">
-                      Chưa có bình luận nào!
-                    </div>
-                  )}
-                </div>
+                    )}
 
-                {isLoggedIn && (
-                  <form onSubmit={handleCommentSubmit}>
-                    <div className="form-group">
-                      <textarea
-                        className={`form-control bg-white text-dark ${
-                          errors.content ? "is-invalid" : ""
-                        }`}
-                        rows="3"
-                        placeholder="Nhập bình luận..."
-                        value={newComment.content}
-                        onChange={(e) =>
-                          setNewComment({
-                            ...newComment,
-                            content: e.target.value,
-                          })
-                        }
-                      />
-                      {errors.content && (
-                        <div className="invalid-feedback">{errors.content}</div>
+                    {/* Danh sách bình luận */}
+                    <div className="mb-4">
+                      {commentState.loading ? (
+                        <div className="text-center py-4">
+                          <Spinner />
+                        </div>
+                      ) : filteredComments.length > 0 ? (
+                        <ul className="list-unstyled mb-0">
+                          {filteredComments.map((comment) => (
+                            <li
+                              key={comment.id}
+                              className="border-bottom pb-3 mb-3 comment-item"
+                            >
+                              <div className="d-flex gap-3">
+                                <img
+                                  src={
+                                    comment.avatar && String(comment.avatar).startsWith("http")
+                                      ? comment.avatar
+                                      : normalAvatar
+                                  }
+                                  alt={comment.fullname || "Avatar"}
+                                  className="rounded-circle flex-shrink-0"
+                                  style={{ width: 44, height: 44, objectFit: "cover" }}
+                                />
+                                <div className="flex-grow-1 min-w-0">
+                                  <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span className="fw-semibold text-dark">
+                                      {comment.fullname}
+                                    </span>
+                                    <small className="text-muted">
+                                      {formatMessageTimestamp(comment.created_at)}
+                                    </small>
+                                  </div>
+                                  <p className="mb-2 text-secondary" style={{ whiteSpace: "pre-wrap" }}>
+                                    {comment.content}
+                                  </p>
+                                  {userId === comment.user_id && (
+                                    <div className="d-flex gap-2">
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-secondary py-0"
+                                        onClick={() =>
+                                          handleClickOpen("edit", comment.id, comment.content)
+                                        }
+                                      >
+                                        Sửa
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger py-0"
+                                        onClick={() => handleClickOpen("delete", comment.id)}
+                                      >
+                                        Xóa
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-muted text-center py-3 mb-0">
+                          Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+                        </p>
                       )}
                     </div>
-                    <button type="submit" className="btn btn-primary mt-3">
-                      Gửi Bình Luận
-                    </button>
-                  </form>
-                )}
-                {!isLoggedIn && (
-                  <div className="alert alert-warning" role="alert">
-                    Bạn phải <Link to="/login">đăng nhập</Link> để có thể bình
-                    luận.
+
+                    {isLoggedIn ? (
+                      <form onSubmit={handleCommentSubmit} className="mt-3">
+                        <div className="mb-3">
+                          <textarea
+                            className={`form-control form-control-lg ${
+                              errors.content ? "is-invalid" : ""
+                            }`}
+                            rows={3}
+                            placeholder="Viết bình luận của bạn..."
+                            value={newComment.content}
+                            onChange={(e) => {
+                              setNewComment((prev) => ({ ...prev, content: e.target.value }));
+                              if (commentState.moderationMessage && e.target.value.trim()) {
+                                dispatch(clearModerationMessage());
+                              }
+                            }}
+                            style={{ resize: "vertical" }}
+                          />
+                          {errors.content && (
+                            <div className="invalid-feedback d-block">{errors.content}</div>
+                          )}
+                        </div>
+                        <button type="submit" className="btn btn-primary px-4" disabled={commentState.loading}>
+                          {commentState.loading ? "Đang gửi..." : "Gửi bình luận"}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="alert alert-light border text-center py-3 mb-0">
+                        Bạn cần <Link to="/login" className="fw-semibold">đăng nhập</Link> để bình luận.
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -472,11 +474,12 @@ const DetailBlog = () => {
       )}
 
       <DialogEditComment
-        open={isEditDialogOpen} // Mở Dialog sửa khi isEditDialogOpen là true
+        open={isEditDialogOpen}
         content={editingContent}
-        onChange={(e) => setEditingContent(e.target.value)} // Cập nhật nội dung khi thay đổi
-        onClose={handleClose} // Đóng Dialog
-        onSave={handleEditComment} // Lưu bình luận đã chỉnh sửa
+        onChange={(e) => setEditingContent(e.target.value)}
+        onClose={handleClose}
+        onSave={handleEditComment}
+        saving={commentState.loading}
       />
 
       <DialogConfirm

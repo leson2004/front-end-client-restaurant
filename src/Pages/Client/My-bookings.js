@@ -56,7 +56,7 @@ export default function MyBooking() {
 
   const reservationState = useSelector((state) => state.my_booking);
   const reservationDetailState = useSelector(
-    (state) => state.my_booking_detail
+    (state) => state.my_booking_detail,
   );
 
   const query = new URLSearchParams(location.search);
@@ -84,11 +84,11 @@ export default function MyBooking() {
       setSelectedDishes(reservationDetailState.reservationDetail);
       console.log(
         "Reservation Detail:",
-        reservationDetailState.reservationDetail
+        reservationDetailState.reservationDetail,
       );
       console.log(
         "Danh sách món ăn được cập nhật:",
-        reservationDetailState.reservationDetail
+        reservationDetailState.reservationDetail,
       );
     }
   }, [reservationDetailState]);
@@ -120,8 +120,8 @@ export default function MyBooking() {
           emailSearch,
           statusSearch,
           urlPage,
-          reservationState.pageSize
-        )
+          reservationState.pageSize,
+        ),
       );
     }
   }, [
@@ -143,7 +143,6 @@ export default function MyBooking() {
     setSelectedReservation(id);
     setOpen(true);
   };
-
   const handleClose = () => {
     setOpen(false);
     setSelectedReservation(null);
@@ -193,8 +192,8 @@ export default function MyBooking() {
             emailSearch,
             statusSearch,
             urlPage,
-            reservationState.pageSize
-          )
+            reservationState.pageSize,
+          ),
         );
         handleClose();
         setOpenSuccess(true); // Hiển thị thông báo thành công
@@ -209,8 +208,9 @@ export default function MyBooking() {
   };
 
   const pay = async (reservationID, depositAmount) => {
+    const amountInt = Math.round(Number(depositAmount));
     const momoResponse = await dispatch(
-      requestMomoPayUrl(reservationID, depositAmount)
+      requestMomoPayUrl(reservationID, amountInt),
     );
 
     if (momoResponse && momoResponse.payUrl) {
@@ -226,7 +226,7 @@ export default function MyBooking() {
         {
           reservationID,
           reservationDate,
-        }
+        },
       );
 
       // Xử lý kết quả trả về từ API
@@ -264,39 +264,42 @@ export default function MyBooking() {
           emailSearch,
           statusSearch,
           page,
-          reservationState.pageSize
-        )
+          reservationState.pageSize,
+        ),
       );
     }
   };
 
   const statusMapping = {
-    1: { text: "Chờ thanh toán cọc", class: "badge bg-warning" },
-    2: { text: "Hết hạn thanh toán cọc", class: "badge bg-info" },
-    3: { text: "Đã thanh toán cọc", class: "badge bg-primary" },
-    0: { text: "Hủy đơn", class: "badge bg-danger" },
-    4: { text: "Chờ thanh toán toàn bộ đơn", class: "badge bg-success" },
-    5: { text: "Hoàn thành đơn", class: "badge bg-secondary" },
+    0: { text: "Đang giữ chỗ", class: "badge bg-secondary" },
+    1: { text: "Đã xác nhận", class: "badge bg-primary" },
+    2: { text: "Đã vào bàn", class: "badge bg-info" },
+    3: { text: "Hoàn thành", class: "badge bg-success" },
+    4: { text: "Đã hủy", class: "badge bg-danger" },
+    5: { text: "Hết hạn", class: "badge bg-warning" },
   };
 
   const monney = (status, total_amount, deposit) => {
-    if (status == 1 || status == 2) {
-      return "<strong>Số tiền thanh toán:</strong> " + formatCurrency(deposit);
-    } else if (status == 3 || status == 4 || status == 0) {
+    total_amount = parseFloat(total_amount);
+    deposit = parseFloat(deposit);
+    if (status === 0 || status === 5 || status === 4) {
+      return "";
+    }
+    if (status === 1 || status === 2) {
       if (total_amount >= deposit) {
         return (
           "<strong>Số tiền còn lại:</strong> " +
           formatCurrency(total_amount - deposit)
         );
-      } else {
-        return (
-          "<strong>Nhà hàng thối lại:</strong> " +
-          formatCurrency(deposit - total_amount)
-        );
       }
-    } else {
-      return "<strong>Số tiền còn lại:</strong> " + formatCurrency(0);
+      return (
+        "<strong>Số tiền thanh toán cọc:</strong> " + formatCurrency(deposit)
+      );
     }
+    if (status === 3) {
+      return "<strong>Đã thanh toán đủ</strong>";
+    }
+    return "";
   };
 
   return (
@@ -362,12 +365,12 @@ export default function MyBooking() {
                   onChange={handleStatusSearch}
                 >
                   <option value="">Trạng thái</option>
-                  <option value="0">Đã hủy</option>
-                  <option value="1">Chờ thanh toán cọc</option>
-                  <option value="2">Hết hạn thanh toán cọc</option>
-                  <option value="3">Đã thanh toán cọc</option>
-                  <option value="4">Chờ thanh toán toàn bộ đơn</option>
-                  <option value="5">Hoàn thành đơn</option>
+                  <option value="0">Đang giữ chỗ</option>
+                  <option value="1">Đã xác nhận</option>
+                  <option value="2">Đã vào bàn</option>
+                  <option value="3">Hoàn thành</option>
+                  <option value="4">Đã hủy</option>
+                  <option value="5">Hết hạn</option>
                 </select>
               </div>
             </div>
@@ -434,14 +437,18 @@ export default function MyBooking() {
                           <div style={{ flex: "1 1 30%" }}>
                             <p className="mb-2">
                               <strong>Ngày đặt:</strong>{" "}
-                              {formatDateTime(booking.reservation_date)}
+                              {formatDateTime(
+                                booking.reservation_date ||
+                                  booking.start_time,
+                              )}
                             </p>
                             <p className="mb-2">
                               <strong>Số bàn:</strong>{" "}
-                              {booking.tableName &&
-                              booking.status !== 1 &&
-                              booking.status !== 2
-                                ? booking.tableName
+                              {(booking.table?.tableName ||
+                                booking.Table?.tableName) &&
+                              (booking.status === 2 || booking.status === 3)
+                                ? booking.table?.tableName ||
+                                  booking.Table?.tableName
                                 : "Chưa có"}
                             </p>
                           </div>
@@ -455,7 +462,7 @@ export default function MyBooking() {
                               __html: monney(
                                 booking.status,
                                 booking.total_amount,
-                                booking.deposit
+                                booking.deposit,
                               ),
                             }}
                           />
@@ -472,22 +479,23 @@ export default function MyBooking() {
                             >
                               Xem chi tiết
                             </button>
-                            {statusInfo.text === "Chờ thanh toán cọc" && (
+                            {booking.status === 0 && (
                               <button
                                 className="btn btn-primary btn-sm mt-2 ms-2"
                                 onClick={() =>
                                   addTable(
                                     booking.id,
-                                    booking.reservation_date,
-                                    booking.deposit
+                                    booking.reservation_date ||
+                                      booking.start_time,
+                                    booking.deposit,
                                   )
                                 }
                                 style={{ padding: "0.25rem 0.75rem" }}
                               >
-                                Thanh toán
+                                Thanh toán cọc
                               </button>
                             )}
-                            {statusInfo.text === "Đã thanh toán cọc" &&
+                            {booking.status === 1 &&
                               canCancelReservation(booking.reservation_date) &&
                               booking.number_change == 1 && (
                                 <button
@@ -518,7 +526,8 @@ export default function MyBooking() {
                               )}
                           </div>
                         </div>
-                        {booking.deposit > booking.total_amount && (
+                        {parseFloat(booking.deposit) >
+                          parseFloat(booking.total_amount) && (
                           <span style={{ fontSize: "12px", color: "red" }}>
                             Do bạn đã thanh toán cọc trước khi yêu cầu đổi món
                             và tổng tiền hiện đang nhỏ hơn tiền cọc, khi bạn đến
@@ -545,7 +554,7 @@ export default function MyBooking() {
               emailSearch,
               statusSearch,
               page,
-              pageSize
+              pageSize,
             )
           } // Hàm fetch dữ liệu
           onPageChange={handlePageChange}

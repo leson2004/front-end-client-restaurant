@@ -43,11 +43,12 @@ export const addNewReservation = (reservationData) => {
 export const requestMomoPayment =
   (reservationId, amount, reservation_code) => async (dispatch) => {
     try {
+      const amountInt = Math.round(Number(amount));
       const response = await http.post(
         "http://localhost:8080/api/public/payment",
         {
           reservationId,
-          amount,
+          amount: amountInt,
           reservation_code,
         }
       );
@@ -61,11 +62,12 @@ export const requestMomoPayment =
 export const requestMomoPayUrl =
   (reservationId, amount) => async (dispatch) => {
     try {
+      const amountInt = Math.round(Number(amount));
       const response = await http.post(
         "http://localhost:8080/api/public/payment/get_pay_url",
         {
           reservationId,
-          amount,
+          amount: amountInt,
         }
       );
       return response.data; // Trả về dữ liệu để xử lý tiếp
@@ -78,11 +80,12 @@ export const requestMomoPayUrl =
 export const requestMomoPaymentBalance =
   (reservationId, amount) => async (dispatch) => {
     try {
+      const amountInt = Math.round(Number(amount));
       const response = await http.post(
         "http://localhost:8080/api/public/payment/pay_balance",
         {
           reservationId,
-          amount,
+          amount: amountInt,
         }
       );
       return response.data; // Trả về dữ liệu để xử lý tiếp

@@ -4,14 +4,11 @@ import {
   fetchListProductCategory,
   fetchProductCategoryHoatDong,
 } from "../../Actions/ProductCategoryActions";
-import {
-  fetchMenu,
-  fetchProductHoatDong,
-} from "../../Actions/ProductActions";
+import { fetchMenu, fetchProductHoatDong } from "../../Actions/ProductActions";
 import unidecode from "unidecode";
 import { Link, useNavigate } from "react-router-dom";
 import Spinner from "../../Components/Client/Spinner";
-import Pagination from '@mui/material/Pagination';
+import Pagination from "@mui/material/Pagination";
 
 export default function Menu() {
   const dispatch = useDispatch();
@@ -44,7 +41,6 @@ export default function Menu() {
       .replace(/-+$/, ""); // Xóa dấu - ở cuối chuỗi
   };
 
-
   const handleProductClick = (name) => {
     const slug = createSlug(name);
     navigate(`/product-detail/${slug}.html`);
@@ -56,14 +52,21 @@ export default function Menu() {
   };
 
   const productsInCategorySelected = selectedCategory
-    ? productState.product.filter((product) => product.categories_id === selectedCategory)
+    ? productState.product.filter(
+        (product) => product.categories_id === selectedCategory,
+      )
     : productState.product;
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = productsInCategorySelected.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = productsInCategorySelected.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct,
+  );
 
-  const totalPages = Math.ceil(productsInCategorySelected.length / productsPerPage);
+  const totalPages = Math.ceil(
+    productsInCategorySelected.length / productsPerPage,
+  );
 
   return (
     <div>
@@ -78,7 +81,10 @@ export default function Menu() {
               <li className="breadcrumb-item">
                 <Link to="/">Trang chủ</Link>
               </li>
-              <li className="breadcrumb-item text-white active" aria-current="page">
+              <li
+                className="breadcrumb-item text-white active"
+                aria-current="page"
+              >
                 Thực Đơn
               </li>
             </ol>
@@ -89,44 +95,107 @@ export default function Menu() {
       <div className="container-fluid">
         <div className="row justify-content-center">
           {/* Sidebar */}
-          <div className="col-lg-3 col-md-4 bg-light" style={{
-            minHeight: '100vh',
-            padding: '20px',
-            boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
-            overflowY: 'auto'
-          }}>
+          <div
+            className="col-lg-3 col-md-4 bg-light"
+            style={{
+              minHeight: "100vh",
+              padding: "20px",
+              boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+              overflowY: "auto",
+            }}
+          >
             <div className="text-center">
-              <h4 className="mb-4 ff-secondary fw-normal section-title" style={{ fontWeight: 'bold', color: '#FEA100' }}>THỰC ĐƠN</h4>
+              <h4
+                className="mb-4 ff-secondary fw-normal section-title"
+                style={{ fontWeight: "bold", color: "#FEA100" }}
+              >
+                THỰC ĐƠN
+              </h4>
             </div>
             <ul className="list-group">
-              <li className={`list-group-item d-flex align-items-center ${selectedCategory === null ? 'active' : ''}`}
-                style={{ cursor: 'pointer', transition: 'background-color 0.3s', padding: '15px 20px', borderRadius: '8px', marginBottom: '10px' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ffd17a'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                onClick={() => handleCategoryClick(null)}>
-                <i className="icon-class" style={{ marginRight: '15px', fontSize: '1.5rem', color: '#FEA100' }}></i>
-                <span style={{ fontSize: '1.1rem', color: '#333', fontWeight: '500' }}>Xem tất cả</span>
+              <li
+                className={`list-group-item d-flex align-items-center ${selectedCategory === null ? "active" : ""}`}
+                style={{
+                  cursor: "pointer",
+                  transition: "background-color 0.3s",
+                  padding: "15px 20px",
+                  borderRadius: "8px",
+                  marginBottom: "10px",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#ffd17a")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "white")
+                }
+                onClick={() => handleCategoryClick(null)}
+              >
+                <i
+                  className="icon-class"
+                  style={{
+                    marginRight: "15px",
+                    fontSize: "1.5rem",
+                    color: "#FEA100",
+                  }}
+                ></i>
+                <span
+                  style={{
+                    fontSize: "1.1rem",
+                    color: "#333",
+                    fontWeight: "500",
+                  }}
+                >
+                  Xem tất cả
+                </span>
               </li>
               {productCategoryState.product_category.map((item) => (
-                <li className={`list-group-item d-flex align-items-center ${selectedCategory === item.id ? 'active' : ''}`}
+                <li
+                  className={`list-group-item d-flex align-items-center ${selectedCategory === item.id ? "active" : ""}`}
                   key={item.id}
-                  style={{ cursor: 'pointer', transition: 'background-color 0.3s', padding: '15px 20px', borderRadius: '8px', marginBottom: '10px' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ffd17a'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                  onClick={() => handleCategoryClick(item.id)}>
-                  <i className="icon-class" style={{ marginRight: '15px', fontSize: '1.5rem', color: '#FEA100' }}></i>
-                  <span style={{ fontSize: '1.1rem', color: '#333', fontWeight: '500' }}>{item.name}</span>
+                  style={{
+                    cursor: "pointer",
+                    transition: "background-color 0.3s",
+                    padding: "15px 20px",
+                    borderRadius: "8px",
+                    marginBottom: "10px",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffd17a")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "white")
+                  }
+                  onClick={() => handleCategoryClick(item.id)}
+                >
+                  <i
+                    className="icon-class"
+                    style={{
+                      marginRight: "15px",
+                      fontSize: "1.5rem",
+                      color: "#FEA100",
+                    }}
+                  ></i>
+                  <span
+                    style={{
+                      fontSize: "1.1rem",
+                      color: "#333",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {item.name}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Nội dung chính - điều chỉnh col và thêm padding */}
-          <div className="col-lg-9 col-md-8" style={{ padding: '20px' }}>
+          <div className="col-lg-9 col-md-8" style={{ padding: "20px" }}>
             {productCategoryState.loading && <Spinner />}
-            {!productCategoryState.loading && productCategoryState.product_category.length === 0 && (
-              <div>No categories found.</div>
-            )}
+            {!productCategoryState.loading &&
+              productCategoryState.product_category.length === 0 && (
+                <div>No categories found.</div>
+              )}
             {productCategoryState.error && (
               <div>Error: {productCategoryState.error}</div>
             )}
@@ -135,19 +204,38 @@ export default function Menu() {
             {selectedCategory !== null && (
               <div className="container-xxl py-5">
                 <div className="container">
-                  <div className="text-center wow fadeInUp" data-wow-delay="0.1s">
+                  <div
+                    className="text-center wow fadeInUp"
+                    data-wow-delay="0.1s"
+                  >
                     <h5 className="section-title ff-secondary text-center text-primary fw-normal">
-                      Nhà Hàng Hương Sen
+                      Nhà Hàng Hương Việt
                     </h5>
-                    <h1 className="mb-5">{productCategoryState.product_category.find(cat => cat.id === selectedCategory)?.name}</h1>
+                    <h1 className="mb-5">
+                      {
+                        productCategoryState.product_category.find(
+                          (cat) => cat.id === selectedCategory,
+                        )?.name
+                      }
+                    </h1>
                   </div>
 
-                  <div className="tab-class text-center wow fadeInUp" data-wow-delay="0.1s">
+                  <div
+                    className="tab-class text-center wow fadeInUp"
+                    data-wow-delay="0.1s"
+                  >
                     <div className="tab-content">
                       <div id="tab-1" className="tab-pane fade show p-0 active">
                         <div className="row" style={{ rowGap: "20px" }}>
                           {currentProducts.length === 0 ? (
-                            <div className="text-center" style={{ marginTop: '20px', fontSize: '1.2rem', color: '#333' }}>
+                            <div
+                              className="text-center"
+                              style={{
+                                marginTop: "20px",
+                                fontSize: "1.2rem",
+                                color: "#333",
+                              }}
+                            >
                               Đang cập nhật thêm món ăn...
                             </div>
                           ) : (
@@ -155,7 +243,9 @@ export default function Menu() {
                               <div className="col-lg-6" key={product.id}>
                                 <div
                                   className="d-flex align-items-center"
-                                  onClick={() => handleProductClick(product.name)}
+                                  onClick={() =>
+                                    handleProductClick(product.name)
+                                  }
                                   style={{ cursor: "pointer" }}
                                 >
                                   <img
@@ -173,12 +263,20 @@ export default function Menu() {
                                     <div className="w-100 d-flex flex-column text-start ps-4">
                                       <h5 className="d-flex justify-content-between border-bottom pb-2">
                                         <span>{product.name}</span>
-                                        <span className="text-primary" style={{ fontSize: "1rem" }}>
-                                          {formatPrice(product.price - product.sale_price)}
+                                        <span
+                                          className="text-primary"
+                                          style={{ fontSize: "1rem" }}
+                                        >
+                                          {formatPrice(
+                                            product.price - product.sale_price,
+                                          )}
                                         </span>
                                       </h5>
                                       <div className="d-flex justify-content-end">
-                                        <span className="text-secondary text-decoration-line-through" style={{ fontSize: "0.85rem" }}>
+                                        <span
+                                          className="text-secondary text-decoration-line-through"
+                                          style={{ fontSize: "0.85rem" }}
+                                        >
                                           {formatPrice(product.price)}
                                         </span>
                                       </div>
@@ -187,7 +285,10 @@ export default function Menu() {
                                     <div className="w-100 d-flex flex-column text-start ps-4">
                                       <h5 className="d-flex justify-content-between border-bottom pb-2">
                                         <span>{product.name}</span>
-                                        <span className="text-primary" style={{ fontSize: "1rem" }}>
+                                        <span
+                                          className="text-primary"
+                                          style={{ fontSize: "1rem" }}
+                                        >
                                           {formatPrice(product.price)}
                                         </span>
                                       </h5>
@@ -206,77 +307,103 @@ export default function Menu() {
             )}
 
             {/* Hiển thị tất cả danh mục nếu không có danh mục nào được chọn */}
-            {selectedCategory === null && productCategoryState.product_category.map((item) => {
-              const productsInCategorySelected = productState.product.filter(product => product.categories_id === item.id);
-              if (productsInCategorySelected.length === 0) return null;
+            {selectedCategory === null &&
+              productCategoryState.product_category.map((item) => {
+                const productsInCategorySelected = productState.product.filter(
+                  (product) => product.categories_id === item.id,
+                );
+                if (productsInCategorySelected.length === 0) return null;
 
-              return (
-                <div className="container-xxl py-5" key={item.id}>
-                  <div className="container">
-                    <div className="text-center wow fadeInUp" data-wow-delay="0.1s">
-                      <h5 className="section-title ff-secondary text-center text-primary fw-normal">
-                        Nhà Hàng Hương Sen
-                      </h5>
-                      <h1 className="mb-5">{item.name}</h1>
-                    </div>
+                return (
+                  <div className="container-xxl py-5" key={item.id}>
+                    <div className="container">
+                      <div
+                        className="text-center wow fadeInUp"
+                        data-wow-delay="0.1s"
+                      >
+                        <h5 className="section-title ff-secondary text-center text-primary fw-normal">
+                          Nhà Hàng Hương Việt
+                        </h5>
+                        <h1 className="mb-5">{item.name}</h1>
+                      </div>
 
-                    <div className="tab-class text-center wow fadeInUp" data-wow-delay="0.1s">
-                      <div className="tab-content">
-                        <div id="tab-1" className="tab-pane fade show p-0 active">
-                          <div className="row" style={{ rowGap: "20px" }}>
-                            {productsInCategorySelected.map((product) => (
-                              <div className="col-lg-6" key={product.id}>
-                                <div
-                                  className="d-flex align-items-center"
-                                  onClick={() => handleProductClick(product.name)}
-                                  style={{ cursor: "pointer" }}
-                                >
-                                  <img
-                                    className="flex-shrink-0 img-fluid rounded"
-                                    src={product.image}
-                                    alt={product.name}
-                                    style={{
-                                      width: "150px",
-                                      height: "150px",
-                                      objectFit: "cover",
-                                      borderRadius: "10px",
-                                    }}
-                                  />
-                                  {product.sale_price > 0 ? (
-                                    <div className="w-100 d-flex flex-column text-start ps-4">
-                                      <h5 className="d-flex justify-content-between border-bottom pb-2">
-                                        <span>{product.name}</span>
-                                        <span className="text-primary" style={{ fontSize: "1rem" }}>
-                                          {formatPrice(product.price - product.sale_price)}
-                                        </span>
-                                      </h5>
-                                      <div className="d-flex justify-content-end">
-                                        <span className="text-secondary text-decoration-line-through" style={{ fontSize: "0.85rem" }}>
-                                          {formatPrice(product.price)}
-                                        </span>
+                      <div
+                        className="tab-class text-center wow fadeInUp"
+                        data-wow-delay="0.1s"
+                      >
+                        <div className="tab-content">
+                          <div
+                            id="tab-1"
+                            className="tab-pane fade show p-0 active"
+                          >
+                            <div className="row" style={{ rowGap: "20px" }}>
+                              {productsInCategorySelected.map((product) => (
+                                <div className="col-lg-6" key={product.id}>
+                                  <div
+                                    className="d-flex align-items-center"
+                                    onClick={() =>
+                                      handleProductClick(product.name)
+                                    }
+                                    style={{ cursor: "pointer" }}
+                                  >
+                                    <img
+                                      className="flex-shrink-0 img-fluid rounded"
+                                      src={product.image}
+                                      alt={product.name}
+                                      style={{
+                                        width: "150px",
+                                        height: "150px",
+                                        objectFit: "cover",
+                                        borderRadius: "10px",
+                                      }}
+                                    />
+                                    {product.sale_price > 0 ? (
+                                      <div className="w-100 d-flex flex-column text-start ps-4">
+                                        <h5 className="d-flex justify-content-between border-bottom pb-2">
+                                          <span>{product.name}</span>
+                                          <span
+                                            className="text-primary"
+                                            style={{ fontSize: "1rem" }}
+                                          >
+                                            {formatPrice(
+                                              product.price -
+                                                product.sale_price,
+                                            )}
+                                          </span>
+                                        </h5>
+                                        <div className="d-flex justify-content-end">
+                                          <span
+                                            className="text-secondary text-decoration-line-through"
+                                            style={{ fontSize: "0.85rem" }}
+                                          >
+                                            {formatPrice(product.price)}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div className="w-100 d-flex flex-column text-start ps-4">
-                                      <h5 className="d-flex justify-content-between border-bottom pb-2">
-                                        <span>{product.name}</span>
-                                        <span className="text-primary" style={{ fontSize: "1rem" }}>
-                                          {formatPrice(product.price)}
-                                        </span>
-                                      </h5>
-                                    </div>
-                                  )}
+                                    ) : (
+                                      <div className="w-100 d-flex flex-column text-start ps-4">
+                                        <h5 className="d-flex justify-content-between border-bottom pb-2">
+                                          <span>{product.name}</span>
+                                          <span
+                                            className="text-primary"
+                                            style={{ fontSize: "1rem" }}
+                                          >
+                                            {formatPrice(product.price)}
+                                          </span>
+                                        </h5>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
             {/* Hiển thị phân trang nếu có nhiều hơn 10 sản phẩm */}
             {selectedCategory !== null && totalPages > 1 && (

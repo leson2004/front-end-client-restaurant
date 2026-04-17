@@ -8,12 +8,13 @@ import productDetailReducer from "./ProductDetailReducers";
 import contactReducer from "./ContactReducers";
 import blogDetailReducer from "./BlogDetailReducers";
 import promotionReducer from "./PromotionReducers";
-import CommentBlogReducer from './CommentBlogReducers';
+import CommentBlogReducer from './commentSlice';
 import MyBookingReducer from './MyBookingReducers';
 import ReservationDetailReducer from './ReservationDetailOfTrangReducers';
 import TableReducer from './TableReducers';
 import MembershipReducer from "./MembershipReducers";
 import MembershipTiersReducer from "./MembershipTiersReducers";
+import reservationHoldReducer from "./ReservationHoldReducers";
 
 
 const rootReducer = combineReducers({
@@ -32,7 +33,8 @@ const rootReducer = combineReducers({
     my_booking_detail: ReservationDetailReducer,
     table: TableReducer,
     membership: MembershipReducer,
-    membership_tiers: MembershipTiersReducer
+    membership_tiers: MembershipTiersReducer,
+    reservation_hold: reservationHoldReducer,
 });
 
 export default rootReducer;

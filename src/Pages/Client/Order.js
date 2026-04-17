@@ -3,45 +3,37 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMenu } from "../../Actions/ProductActions";
 import { fetchListProductCategory } from "../../Actions/ProductCategoryActions";
+import { addReservationItems } from "../../Actions/ReservationHoldActions";
 import { DangerAlert } from "../../Components/Alert/Alert";
 
 export default function Order() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const products = useSelector((state) => state.product.product);
   const productCategoryState = useSelector((state) => state.product_category);
   const loading = useSelector((state) => state.product.loading);
   const error = useSelector((state) => state.product.error);
-  const navigate = useNavigate();
-
-  const [customerInfo, setCustomerInfo] = useState({
-    fullname: "",
-    email: "",
-    tel: "",
-    reservation_date: "",
-    party_size: "",
-    note: "",
-    status: 1,
-  });
+  const holdState = useSelector((state) => state.reservation_hold);
 
   const [selectedProducts, setSelectedProducts] = useState({});
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!holdState.reservationId) {
+      navigate("/booking", { replace: true });
+      return;
+    }
     dispatch(fetchMenu());
     dispatch(fetchListProductCategory());
-
-    const savedData = localStorage.getItem("customerInfo");
-    if (savedData) {
-      setCustomerInfo(JSON.parse(savedData));
-    }
 
     const savedProducts = localStorage.getItem("selectedProducts");
     if (savedProducts) {
       setSelectedProducts(JSON.parse(savedProducts));
     }
-  }, [dispatch]);
+  }, [dispatch, holdState.reservationId, navigate]);
 
   const handleProductChange = (productId, price, sale_price, image, name) => {
     setSelectedProducts((prev) => {
@@ -62,7 +54,7 @@ export default function Order() {
       return newSelection;
     });
   };
-  
+
   const handleQuantityChange = (
     productId,
     change,
@@ -74,7 +66,7 @@ export default function Order() {
     setSelectedProducts((prev) => {
       const currentProduct = prev[productId] || { quantity: 0 };
       const newQuantity = Math.max(currentProduct.quantity + change, 0);
-  
+
       if (newQuantity > 0) {
         const finalPrice = sale_price ? price - sale_price : price;
         const newSelection = {
@@ -97,13 +89,12 @@ export default function Order() {
       }
     });
   };
-  
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const filteredProducts = Object.entries(selectedProducts).reduce(
       (acc, [id, product]) => {
         if (product.quantity > 0) {
@@ -120,8 +111,23 @@ export default function Order() {
       return;
     }
 
-    localStorage.setItem("selectedProducts", JSON.stringify(filteredProducts));
-    navigate("/pay");
+    const items = Object.values(filteredProducts).map((p) => ({
+      product_id: p.id,
+      quantity: p.quantity,
+      price: p.price,
+    }));
+
+    setSubmitting(true);
+    try {
+      await dispatch(addReservationItems(holdState.reservationId, items));
+      localStorage.setItem("selectedProducts", JSON.stringify(filteredProducts));
+      navigate("/pay");
+    } catch (err) {
+      setSnackbarMessage(err.message || "Gửi đơn món thất bại. Vui lòng thử lại.");
+      setOpenSnackbar(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatPrice = (price) => {
@@ -129,10 +135,6 @@ export default function Order() {
       style: "currency",
       currency: "VND",
     });
-  };
-
-  const formatTime = (datetime) => {
-    return new Date(datetime).toLocaleString("VN-vi");
   };
 
   const calculateTotalPrice = () => {
@@ -146,6 +148,10 @@ export default function Order() {
     ? products.filter((product) => product.categories_id === selectedCategory)
     : products;
 
+  if (!holdState.reservationId) {
+    return null;
+  }
+
   return (
     <div>
       <div className="container-fluid p-0 py-5 bg-dark hero-header mb-5">
@@ -156,13 +162,13 @@ export default function Order() {
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb justify-content-center text-uppercase">
               <li className="breadcrumb-item">
-                <a href="#">Trang chủ</a>
+                <a href="/">Trang chủ</a>
               </li>
               <li
                 className="breadcrumb-item text-white active"
                 aria-current="page"
               >
-                Đặt bàn
+                Chọn món
               </li>
             </ol>
           </nav>
@@ -174,27 +180,15 @@ export default function Order() {
           <div className="col-lg-4 col-md-6 bg-warning p-5">
             <div className="text-center mb-4">
               <h1 className="text-white section-title ff-secondary">
-                Thông tin đặt bàn
+                Đặt chỗ của bạn
               </h1>
             </div>
             <p className="mb-4 mt-4 text-dark text-start">
-              <strong>Họ tên:</strong> {customerInfo.fullname}
+              <strong>Mã đặt chỗ:</strong> {holdState.reservationCode}
             </p>
             <p className="mb-4 text-dark text-start">
-              <strong>Email:</strong> {customerInfo.email}
-            </p>
-            <p className="mb-4 text-dark text-start">
-              <strong>Số điện thoại:</strong> {customerInfo.tel}
-            </p>
-            <p className="mb-4 text-dark text-start">
-              <strong>Thời gian đặt bàn:</strong>{" "}
-              {formatTime(customerInfo.reservation_date)}
-            </p>
-            <p className="mb-4 text-dark text-start">
-              <strong>Số người:</strong> {customerInfo.party_size} người
-            </p>
-            <p className="mb-4 text-dark text-start">
-              <strong>Ghi chú:</strong> {customerInfo.note}
+              Hoàn tất chọn món và nhấn <strong>Tiếp theo</strong> để thanh toán
+              cọc.
             </p>
           </div>
 
@@ -213,7 +207,7 @@ export default function Order() {
                 </a>
               </li>
               {productCategoryState.product_category
-                .filter(
+                ?.filter(
                   (category) =>
                     category.name !== "Chưa phân loại" &&
                     products.some(
@@ -238,81 +232,82 @@ export default function Order() {
             </ul>
 
             <div className="col-md-12 bg-light p-4">
-              <form>
-                {loading && <p>Loading...</p>}
-                {error && <p>Error: {error}</p>}
-                <div className="scrollable-list">
-                  {productsInCategorySelected.map((product) => (
-                    <div
-                      className="menu-item d-flex justify-content-between align-items-center mb-3"
-                      key={product.id}
-                    >
-                      <div className="d-flex align-items-center flex-grow-1">
-                        <img
-                          src={product.image}
-                          style={{ width: "50px" }}
-                          alt={product.name}
-                          className="img-fluid me-3"
-                        />
-                        <div className="flex-grow-1">
-                          <label
-                            htmlFor={`product-${product.id}`}
-                            className="mb-0"
-                          >
-                            {product.name}
-                          </label>
-                          <p className="text-primary mb-0">
-                            {formatPrice(product.price - product.sale_price)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="quantity-control d-flex align-items-center">
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary"
-                          onClick={() =>
-                            handleQuantityChange(
-                              product.id,
-                              -1,
-                              product.price,
-                              product.sale_price,
-                              product.image,
-                              product.name
-                            )
-                          }
+              {loading && <p>Loading...</p>}
+              {error && <p>Error: {error}</p>}
+              <div className="scrollable-list">
+                {productsInCategorySelected?.map((product) => (
+                  <div
+                    className="menu-item d-flex justify-content-between align-items-center mb-3"
+                    key={product.id}
+                  >
+                    <div className="d-flex align-items-center flex-grow-1">
+                      <img
+                        src={product.image}
+                        style={{ width: "50px" }}
+                        alt={product.name}
+                        className="img-fluid me-3"
+                      />
+                      <div className="flex-grow-1">
+                        <label
+                          htmlFor={`product-${product.id}`}
+                          className="mb-0"
                         >
-                          -
-                        </button>
-                        <input
-                          type="text"
-                          value={selectedProducts[product.id]?.quantity || 0}
-                          className="form-control text-center mx-2"
-                          style={{ width: "50px" }}
-                          readOnly
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary"
-                          onClick={() =>
-                            handleQuantityChange(
-                              product.id,
-                              1,
-                              product.price,
-                              product.sale_price,
-                              product.image,
-                              product.name
-                            )
-                          }
-                        >
-                          +
-                        </button>
+                          {product.name}
+                        </label>
+                        <p className="text-primary mb-0">
+                          {formatPrice(
+                            product.sale_price
+                              ? product.price - product.sale_price
+                              : product.price
+                          )}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </form>
+                    <div className="quantity-control d-flex align-items-center">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() =>
+                          handleQuantityChange(
+                            product.id,
+                            -1,
+                            product.price,
+                            product.sale_price,
+                            product.image,
+                            product.name
+                          )
+                        }
+                      >
+                        -
+                      </button>
+                      <input
+                        type="text"
+                        value={selectedProducts[product.id]?.quantity || 0}
+                        className="form-control text-center mx-2"
+                        style={{ width: "50px" }}
+                        readOnly
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() =>
+                          handleQuantityChange(
+                            product.id,
+                            1,
+                            product.price,
+                            product.sale_price,
+                            product.image,
+                            product.name
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-              {/* Display the list of selected products */}
               <div className="selected-products mt-4">
                 <h4 className="text-center mb-3">Danh sách món đã chọn</h4>
                 {Object.keys(selectedProducts).length === 0 ? (
@@ -331,9 +326,8 @@ export default function Order() {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.entries(selectedProducts)
-                          .slice(0, 5)
-                          .map(([productId, product]) => (
+                        {Object.entries(selectedProducts).map(
+                          ([productId, product]) => (
                             <tr key={productId}>
                               <td>
                                 <div className="d-flex align-items-center">
@@ -353,10 +347,13 @@ export default function Order() {
                               <td>{product.quantity}</td>
                               <td>{formatPrice(product.price)}</td>
                               <td>
-                                {formatPrice(product.price * product.quantity)}
+                                {formatPrice(
+                                  product.price * product.quantity
+                                )}
                               </td>
                             </tr>
-                          ))}
+                          )
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -364,7 +361,9 @@ export default function Order() {
               </div>
 
               <div className="text-end text-warning mt-4 ">
-                <strong>Tổng tiền: {formatPrice(calculateTotalPrice())}</strong>
+                <strong>
+                  Tổng tiền: {formatPrice(calculateTotalPrice())}
+                </strong>
               </div>
 
               <hr />
@@ -373,16 +372,14 @@ export default function Order() {
                 <NavLink to="/booking" className="btn btn-secondary me-2">
                   Trở lại
                 </NavLink>
-                <NavLink
-                  to="/pay"
+                <button
+                  type="button"
                   className="btn btn-primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNext();
-                  }}
+                  onClick={handleNext}
+                  disabled={submitting}
                 >
-                  Tiếp theo
-                </NavLink>
+                  {submitting ? "Đang gửi..." : "Tiếp theo (Thanh toán)"}
+                </button>
               </div>
             </div>
           </div>
